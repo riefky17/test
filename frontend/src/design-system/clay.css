@@ -1,0 +1,163 @@
+/* Shared claymorphism design system -- one copy used by all 3 apps.
+   Each app sets its own accent color via a data-app attribute on
+   <body>; SOS red is the one deliberate break from the pastel palette
+   so it always reads as urgent regardless of which app is on screen. */
+
+:root {
+  --clay-bg: #eef0f6;
+  --clay-surface-from: #ffffff;
+  --clay-surface-to: #e8e8f0;
+  --clay-shadow-dark: rgba(163, 177, 198, 0.5);
+  --clay-shadow-light: rgba(255, 255, 255, 0.8);
+  --clay-text: #2c2c3a;
+  --clay-text-muted: #6b6b7c;
+  --clay-accent: #2dd4bf;
+  --clay-accent-contrast: #ffffff;
+  --clay-danger: #ef4444;
+}
+
+[data-app="finance"] {
+  --clay-accent: #14b8a6; /* teal/mint */
+}
+
+[data-app="geochat"] {
+  --clay-accent: #fb923c; /* coral/orange */
+}
+
+[data-app="fitness"] {
+  --clay-accent: #a78bfa; /* violet/lime pairing */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--clay-bg);
+  color: var(--clay-text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+.clay-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.clay-card {
+  border-radius: 24px;
+  background: linear-gradient(145deg, var(--clay-surface-from), var(--clay-surface-to));
+  box-shadow:
+    8px 8px 16px var(--clay-shadow-dark),
+    -8px -8px 16px var(--clay-shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+  padding: 1.5rem;
+}
+
+.clay-card--flat {
+  box-shadow:
+    4px 4px 10px var(--clay-shadow-dark),
+    -4px -4px 10px var(--clay-shadow-light);
+}
+
+.clay-button {
+  border: none;
+  border-radius: 16px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--clay-accent-contrast);
+  background: linear-gradient(145deg, var(--clay-accent), color-mix(in srgb, var(--clay-accent) 80%, black));
+  box-shadow:
+    6px 6px 12px var(--clay-shadow-dark),
+    -6px -6px 12px var(--clay-shadow-light);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.clay-button:active {
+  transform: translateY(1px);
+  box-shadow:
+    2px 2px 6px var(--clay-shadow-dark),
+    -2px -2px 6px var(--clay-shadow-light);
+}
+
+.clay-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clay-button--danger {
+  background: linear-gradient(145deg, var(--clay-danger), #b91c1c);
+}
+
+.clay-button--ghost {
+  background: transparent;
+  color: var(--clay-text);
+  box-shadow:
+    inset 3px 3px 8px var(--clay-shadow-dark),
+    inset -3px -3px 8px var(--clay-shadow-light);
+}
+
+.clay-input {
+  border: none;
+  border-radius: 14px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  background: var(--clay-bg);
+  box-shadow:
+    inset 3px 3px 8px var(--clay-shadow-dark),
+    inset -3px -3px 8px var(--clay-shadow-light);
+  color: var(--clay-text);
+  width: 100%;
+}
+
+.clay-input:focus {
+  outline: 2px solid var(--clay-accent);
+  outline-offset: 2px;
+}
+
+.clay-nav {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  align-items: center;
+}
+
+.clay-nav__brand {
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.clay-nav a {
+  color: var(--clay-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+}
+
+.clay-nav a.active {
+  color: var(--clay-text);
+  background: linear-gradient(145deg, var(--clay-surface-from), var(--clay-surface-to));
+  box-shadow:
+    4px 4px 10px var(--clay-shadow-dark),
+    -4px -4px 10px var(--clay-shadow-light);
+}
+
+.clay-main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.clay-sos-button {
+  background: linear-gradient(145deg, var(--clay-danger), #b91c1c) !important;
+  font-size: 1.1rem;
+}

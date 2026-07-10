@@ -1,0 +1,20 @@
+[Unit]
+Description=Geochat service (family chat + location + SOS)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=familyapps
+WorkingDirectory=/opt/family-app-suite/geochat-svc
+EnvironmentFile=/etc/family-app-suite/geochat-svc.env
+ExecStart=/opt/family-app-suite/geochat-svc/geochat-svc
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+# SOS audit log lives outside PrivateTmp so it survives restarts.
+ReadWritePaths=/var/log/geochat
+
+[Install]
+WantedBy=multi-user.target
