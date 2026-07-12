@@ -20,10 +20,6 @@ type Config struct {
 	// must be true.
 	CookieDomain string
 	CookieSecure bool
-	// TelegramBotToken / TelegramChatIDs power the SOS fallback path in
-	// geochat-svc. Unused by finance-svc and fitness-svc.
-	TelegramBotToken string
-	TelegramChatIDs  []string
 	// StaticDir is the built frontend (frontend/dist) each service
 	// serves directly -- HAProxy routes a whole hostname to exactly one
 	// backend, so whichever service answers for e.g. geochat.yourdomain.com
@@ -48,39 +44,12 @@ func Load(defaultAddr string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		DatabaseURL:      dbURL,
-		ListenAddr:       addr,
-		CookieDomain:     os.Getenv("COOKIE_DOMAIN"),
-		CookieSecure:     os.Getenv("COOKIE_SECURE") != "false",
-		TelegramBotToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
-		StaticDir:        staticDir,
-	}
-
-	if raw := os.Getenv("TELEGRAM_CHAT_IDS"); raw != "" {
-		cfg.TelegramChatIDs = splitAndTrim(raw)
+		DatabaseURL:  dbURL,
+		ListenAddr:   addr,
+		CookieDomain: os.Getenv("COOKIE_DOMAIN"),
+		CookieSecure: os.Getenv("COOKIE_SECURE") != "false",
+		StaticDir:    staticDir,
 	}
 
 	return cfg, nil
-}
-
-func splitAndTrim(raw string) []string {
-	var out []string
-	cur := ""
-	for _, r := range raw {
-		if r == ',' {
-			if cur != "" {
-				out = append(out, cur)
-				cur = ""
-			}
-			continue
-		}
-		if r == ' ' {
-			continue
-		}
-		cur += string(r)
-	}
-	if cur != "" {
-		out = append(out, cur)
-	}
-	return out
 }

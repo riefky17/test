@@ -24,12 +24,17 @@ CREATE TABLE IF NOT EXISTS geochat.locations (
 -- suspenders per the doc: "independent of the main app DB" in spirit --
 -- this table plus the append-only file log in cmd/geochat-svc's data
 -- dir both record every trigger so it can be audited).
+--
+-- There's no third-party fallback (no Telegram/WhatsApp bot) -- the
+-- live websocket broadcast is the only delivery path SOS has, so
+-- recipients_online records how many other family members were
+-- actually connected and able to see the alert the instant it fired.
 CREATE TABLE IF NOT EXISTS geochat.sos_events (
-    id           BIGSERIAL PRIMARY KEY,
-    user_id      BIGINT NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    latitude     DOUBLE PRECISION,
-    longitude    DOUBLE PRECISION,
-    message      TEXT,
-    telegram_ok  BOOLEAN NOT NULL DEFAULT false,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                 BIGSERIAL PRIMARY KEY,
+    user_id            BIGINT NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    latitude           DOUBLE PRECISION,
+    longitude          DOUBLE PRECISION,
+    message            TEXT,
+    recipients_online  INT NOT NULL DEFAULT 0,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -23,7 +23,7 @@ func newSOSLogger(path string) *sosLogger {
 	return &sosLogger{path: path}
 }
 
-func (l *sosLogger) append(username string, lat, lng *float64, telegramOK bool) error {
+func (l *sosLogger) append(username string, lat, lng *float64, recipientsOnline int) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -38,25 +38,29 @@ func (l *sosLogger) append(username string, lat, lng *float64, telegramOK bool) 
 		coords = fmt.Sprintf("%.6f,%.6f", *lat, *lng)
 	}
 
-	line := fmt.Sprintf("%s\tuser=%s\tcoords=%s\ttelegram_ok=%t\n",
-		time.Now().UTC().Format(time.RFC3339), username, coords, telegramOK)
+	line := fmt.Sprintf("%s\tuser=%s\tcoords=%s\trecipients_online=%d\n",
+		time.Now().UTC().Format(time.RFC3339), username, coords, recipientsOnline)
 	_, err = f.WriteString(line)
 	return err
 }
 
 type sosService struct {
-	pool     *pgxpool.Pool
-	hub      *hub
-	telegram *telegramNotifier
-	fileLog  *sosLogger
+	pool    *pgxpool.Pool
+	hub     *hub
+	fileLog *sosLogger
 }
 
-// trigger fans an SOS out across every channel this stack has: the
-// live websocket broadcast (fast, but only reaches connected clients on
-// a working VPS), the Telegram fallback (reaches phones even if the
-// VPS is down), and two independent audit trails (DB row + append-only
-// file).
-func (s *sosService) trigger(ctx context.Context, userID int64, username, message string, lat, lng *float64) (telegramOK bool) {
+// trigger is Geochat's whole SOS story: everything runs through this
+// same web messenger, there's no separate third-party bot to fall back
+// to. It broadcasts over the live websocket (the only delivery path
+// there is) and writes two independent audit trails -- a Postgres row
+// and an append-only file -- recording exactly how many other family
+// members were actually online to see it at the moment it fired, so a
+// trigger can be reviewed honestly afterwards even if nobody was
+// connected to receive it live.
+func (s *sosService) trigger(ctx context.Context, userID int64, username, message string, lat, lng *float64) (recipientsOnline int) {
+	recipientsOnline = s.hub.onlineOthers(userID)
+
 	s.hub.broadcast(wsEvent{
 		Kind:      "sos",
 		UserID:    userID,
@@ -67,14 +71,12 @@ func (s *sosService) trigger(ctx context.Context, userID int64, username, messag
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	})
 
-	telegramOK = s.telegram.notifySOS(ctx, username, message, lat, lng)
-
 	_, _ = s.pool.Exec(ctx, `
-		INSERT INTO geochat.sos_events (user_id, latitude, longitude, message, telegram_ok)
+		INSERT INTO geochat.sos_events (user_id, latitude, longitude, message, recipients_online)
 		VALUES ($1, $2, $3, $4, $5)
-	`, userID, lat, lng, message, telegramOK)
+	`, userID, lat, lng, message, recipientsOnline)
 
-	_ = s.fileLog.append(username, lat, lng, telegramOK)
+	_ = s.fileLog.append(username, lat, lng, recipientsOnline)
 
-	return telegramOK
+	return recipientsOnline
 }

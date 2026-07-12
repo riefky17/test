@@ -1,8 +1,9 @@
-// geochat-svc is the family chat + location + SOS backend. It listens
-// on 127.0.0.1:3002. This is the one service where downtime actually
-// matters in an emergency, which is why SOS triggers also fan out to
-// Telegram (see telegram.go / sos.go) instead of depending solely on
-// this process and this VPS being up.
+// geochat-svc is the family chat + location + SOS backend: a
+// self-contained web messenger, no third-party bot (Telegram/WhatsApp)
+// involved. It listens on 127.0.0.1:3002. This is the one service
+// where downtime actually matters in an emergency -- SOS delivery
+// depends entirely on this process and this VPS being up, since the
+// websocket broadcast (see sos.go) is the only delivery path there is.
 package main
 
 import (
@@ -38,10 +39,6 @@ func main() {
 	}
 	defer pool.Close()
 
-	if !newTelegramNotifier(cfg.TelegramBotToken, cfg.TelegramChatIDs).enabled() {
-		log.Println("WARNING: TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_IDS not set -- SOS has no fallback channel, only the in-app broadcast")
-	}
-
 	sosLogPath := os.Getenv("SOS_LOG_PATH")
 	if sosLogPath == "" {
 		sosLogPath = "/var/log/geochat/sos.log"
@@ -53,10 +50,9 @@ func main() {
 		pool: pool,
 		hub:  h,
 		sos: &sosService{
-			pool:     pool,
-			hub:      h,
-			telegram: newTelegramNotifier(cfg.TelegramBotToken, cfg.TelegramChatIDs),
-			fileLog:  newSOSLogger(sosLogPath),
+			pool:    pool,
+			hub:     h,
+			fileLog: newSOSLogger(sosLogPath),
 		},
 	}
 

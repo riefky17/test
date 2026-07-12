@@ -41,19 +41,30 @@ All 3 share one Postgres instance with separate schemas (not separate
 databases) so backups, tuning, and connection limits stay in one place
 while each app's tables stay isolated.
 
-## SOS: the one non-negotiable part of this stack
+## Geochat: a self-contained web messenger, no third-party bot
 
-Geochat's SOS button does three things on trigger (see
-`backend/geochat-svc/sos.go`):
+By design, Geochat does not route through Telegram, WhatsApp, or any other
+outside service — it's its own web messenger, and location sharing runs on
+the browser's native Geolocation permission (`frontend/src/apps/geochat/GeochatApp.tsx`):
+the user gets the browser's own "Allow location access?" prompt, nothing else
+asks for consent, and no location data leaves this app.
 
-1. Broadcasts over the open websocket to whichever family members are connected.
-2. Fires a Telegram Bot API `sendMessage` + `sendLocation` to the other two
-   phones — a fallback channel that does **not** depend on this VPS being up.
-3. Logs the trigger twice, independently: a Postgres row (`geochat.sos_events`)
-   and an append-only file (`SOS_LOG_PATH`, default `/var/log/geochat/sos.log`).
+SOS does two things on trigger (see `backend/geochat-svc/sos.go`):
 
-**Before trusting this in production, test the Telegram fallback with the
-VPS's geochat-svc process stopped**, not just in normal operation.
+1. Broadcasts over the open websocket to whichever family members are connected —
+   this is the **only** delivery path there is, since there's no third-party fallback.
+2. Logs the trigger twice, independently: a Postgres row (`geochat.sos_events`,
+   including `recipients_online` — how many other family members were actually
+   connected at that moment) and an append-only file (`SOS_LOG_PATH`, default
+   `/var/log/geochat/sos.log`).
+
+**Trade-off worth naming honestly:** because there's no fallback channel outside
+this VPS, SOS delivery depends entirely on geochat-svc (and the VPS it runs on)
+being up and the recipient's browser tab having an open websocket connection. If
+that matters more than staying third-party-free, the natural next step is Web
+Push (a service worker + the Push API) so a trigger can reach a phone even with
+the tab closed — still no outside bot, but it does mean geochat-svc would need
+to hold VAPID keys and each client's push subscription.
 
 ## Local development
 

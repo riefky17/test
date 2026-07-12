@@ -23,19 +23,26 @@ type wsEvent struct {
 // hub fans out events to whichever of the (at most 3) family members
 // are currently connected. At this user count a mutex-guarded map is
 // plenty -- no need for a more elaborate pub/sub layer.
+//
+// This is the only delivery channel Geochat has -- there's no
+// third-party fallback (no Telegram/WhatsApp bot). An SOS trigger is
+// only actually seen live by whoever else already has the web
+// messenger open, which is why onlineOthers is tracked and logged
+// alongside every trigger: it's the honest signal of whether the alert
+// actually reached anyone at the moment it fired.
 type hub struct {
 	mu      sync.Mutex
-	clients map[*websocket.Conn]struct{}
+	clients map[*websocket.Conn]int64
 }
 
 func newHub() *hub {
-	return &hub{clients: make(map[*websocket.Conn]struct{})}
+	return &hub{clients: make(map[*websocket.Conn]int64)}
 }
 
-func (h *hub) add(conn *websocket.Conn) {
+func (h *hub) add(conn *websocket.Conn, userID int64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.clients[conn] = struct{}{}
+	h.clients[conn] = userID
 }
 
 func (h *hub) remove(conn *websocket.Conn) {
@@ -55,4 +62,20 @@ func (h *hub) broadcast(event wsEvent) {
 	for conn := range h.clients {
 		_ = conn.WriteMessage(websocket.TextMessage, payload)
 	}
+}
+
+// onlineOthers counts open connections belonging to family members
+// other than excludeUserID -- i.e. how many people were actually
+// reachable to see an SOS the instant it fired.
+func (h *hub) onlineOthers(excludeUserID int64) int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	count := 0
+	for _, userID := range h.clients {
+		if userID != excludeUserID {
+			count++
+		}
+	}
+	return count
 }

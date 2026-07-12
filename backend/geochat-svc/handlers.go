@@ -31,7 +31,7 @@ func (h *geochatHandlers) handleWS() fiber.Handler {
 			return
 		}
 
-		h.hub.add(c)
+		h.hub.add(c, user.ID)
 		defer h.hub.remove(c)
 
 		for {
@@ -204,7 +204,7 @@ func (h *geochatHandlers) triggerSOSHTTP(c *fiber.Ctx) error {
 		body.Message = "I need help"
 	}
 
-	telegramOK := h.sos.trigger(c.Context(), user.ID, user.Username, body.Message, body.Latitude, body.Longitude)
+	recipientsOnline := h.sos.trigger(c.Context(), user.ID, user.Username, body.Message, body.Latitude, body.Longitude)
 
-	return c.JSON(fiber.Map{"ok": true, "telegram_ok": telegramOK})
+	return c.JSON(fiber.Map{"ok": true, "recipients_online": recipientsOnline})
 }
