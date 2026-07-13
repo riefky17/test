@@ -23,11 +23,45 @@ backend/            Go module: 3 services + shared internal packages
   fitness-svc/       Fitness Tracker backend (127.0.0.1:3003)
   cmd/seed/          one-off script to create the 3 family accounts
 db/migrations/       SQL migrations, schema-separated per app (auth/finance/geochat/fitness)
-frontend/            Vite + React + TypeScript SPA, shared claymorphism design system,
-                      one route tree per app behind a single login
+frontend/            3 independent Vite + React + TypeScript apps, one per service --
+                      see "3 separate frontend apps" below
 deploy/              HAProxy config, Cloudflare Tunnel config, systemd units, Postgres tuning
 scripts/             build.sh (builds everything), backup.sh (nightly pg_dump -> R2/B2)
 ```
+
+## 3 separate frontend apps, one shared login
+
+Each app is its own independently-built Vite project, not a route inside a
+shared bundle:
+
+```
+frontend/
+  shared/               plain TypeScript, no build step of its own --
+                          design-system/  ClayCard/ClayButton/ClayInput + clay.css
+                          lib/            api client, auth context, IDR formatting,
+                                          cross-app link helper (siblingApps.ts)
+                          AppFrame.tsx    shared nav chrome
+                          LoginPage.tsx   shared login screen
+  apps/
+    finance/            @family-app-suite/finance-app  (dev port 5173 -> :3001)
+    geochat/            @family-app-suite/geochat-app   (dev port 5174 -> :3002)
+    fitness/            @family-app-suite/fitness-app   (dev port 5175 -> :3003)
+```
+
+Each app imports `shared/` via a `@shared` path alias/Vite alias (plain
+relative source, no internal npm package to publish or version). Every app
+builds and deploys on its own — Finance Tracker's dist/ never contains a
+byte of Geochat's code, and vice versa.
+
+**Same login, no shared code at runtime:** the 3 apps authenticate against
+the same `auth.users` table and set the same session cookie (scoped to
+`COOKIE_DOMAIN`, e.g. `.yourdomain.com`). Log in on Finance Tracker and
+Geochat/Fitness Tracker already see you as signed in — there's no SSO
+service or token-passing involved, just one cookie the browser sends to
+whichever subdomain a request goes to. The nav bar's links to the other 2
+apps (`shared/AppFrame.tsx`) are plain cross-origin `<a>` tags, not
+client-side routes, since each app really is a separate origin in
+production.
 
 ## Why 3 separate services instead of one monolith
 
@@ -45,7 +79,7 @@ while each app's tables stay isolated.
 
 By design, Geochat does not route through Telegram, WhatsApp, or any other
 outside service — it's its own web messenger, and location sharing runs on
-the browser's native Geolocation permission (`frontend/src/apps/geochat/GeochatApp.tsx`):
+the browser's native Geolocation permission (`frontend/apps/geochat/src/GeochatScreen.tsx`):
 the user gets the browser's own "Allow location access?" prompt, nothing else
 asks for consent, and no location data leaves this app.
 
@@ -79,14 +113,22 @@ for f in db/migrations/*.sql; do psql familyapps -f "$f"; done
 cd backend
 DATABASE_URL=postgres://localhost/familyapps go run ./cmd/seed papa:choose-a-password mami:choose-a-password echa:choose-a-password
 
-# 3. run a service (repeat per service on its own port; see deploy/env.example)
+# 3. run all 3 backends, each on its own port (see deploy/env.example)
 DATABASE_URL=postgres://localhost/familyapps LISTEN_ADDR=127.0.0.1:3001 COOKIE_SECURE=false go run ./finance-svc
+DATABASE_URL=postgres://localhost/familyapps LISTEN_ADDR=127.0.0.1:3002 COOKIE_SECURE=false go run ./geochat-svc
+DATABASE_URL=postgres://localhost/familyapps LISTEN_ADDR=127.0.0.1:3003 COOKIE_SECURE=false go run ./fitness-svc
 
-# 4. run the frontend (proxies /api/* to the 3 ports above -- see frontend/vite.config.ts)
+# 4. install once at the frontend root (npm workspaces), then run whichever app(s) you're working on
 cd ../frontend
 npm install
-npm run dev
+npm run dev --workspace=@family-app-suite/finance-app   # http://localhost:5173, proxies /api to :3001
+npm run dev --workspace=@family-app-suite/geochat-app    # http://localhost:5174, proxies /api to :3002
+npm run dev --workspace=@family-app-suite/fitness-app    # http://localhost:5175, proxies /api to :3003
 ```
+
+Because cookies aren't port-scoped, logging in on `localhost:5173` also
+authenticates `localhost:5174` and `:5175` in local dev — the same
+mechanism `COOKIE_DOMAIN` provides across real subdomains in production.
 
 ## Building for deployment
 
@@ -94,9 +136,10 @@ npm run dev
 ./scripts/build.sh
 ```
 
-Builds the frontend once and the 3 Go binaries, and lays out
+Builds all 3 frontend apps and the 3 Go binaries, and lays out
 `dist/<service>/{<service>,public/}` matching what each systemd unit in
-`deploy/systemd/` expects at `/opt/family-app-suite/<service>/`.
+`deploy/systemd/` expects at `/opt/family-app-suite/<service>/` — each
+service gets only its own app's build in its `public/`.
 
 ## Deploying
 

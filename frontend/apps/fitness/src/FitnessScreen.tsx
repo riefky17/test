@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AppShell } from "../../AppShell";
-import { ClayCard } from "../../design-system/ClayCard";
-import { ClayButton } from "../../design-system/ClayButton";
-import { ClayInput } from "../../design-system/ClayInput";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/auth";
+import { AppFrame } from "@shared/AppFrame";
+import { ClayCard } from "@shared/design-system/ClayCard";
+import { ClayButton } from "@shared/design-system/ClayButton";
+import { ClayInput } from "@shared/design-system/ClayInput";
+import { api } from "@shared/lib/api";
+import { errorMessage } from "@shared/lib/auth";
 
 type Plan = { id: number; name: string; style: string; created_at: string };
 type Session = { id: number; plan_id: number | null; notes: string; performed_at: string };
@@ -15,7 +15,7 @@ const STYLE_LABELS: Record<string, string> = {
   "posterior-chain-focus": "Posterior-chain focus",
 };
 
-export function FitnessApp() {
+export function FitnessScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [name, setName] = useState("");
@@ -70,7 +70,7 @@ export function FitnessApp() {
   }
 
   return (
-    <AppShell appId="fitness" title="Fitness Tracker">
+    <AppFrame appId="fitness" title="Fitness Tracker">
       <ClayCard flat>
         <h3 style={{ marginTop: 0 }}>New plan</h3>
         <p style={{ color: "var(--clay-text-muted)", marginTop: 0 }}>
@@ -126,6 +126,6 @@ export function FitnessApp() {
           {sessions.length === 0 && <p style={{ color: "var(--clay-text-muted)" }}>No sessions logged yet.</p>}
         </div>
       </ClayCard>
-    </AppShell>
+    </AppFrame>
   );
 }

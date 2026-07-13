@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AppShell } from "../../AppShell";
-import { ClayCard } from "../../design-system/ClayCard";
-import { ClayButton } from "../../design-system/ClayButton";
-import { ClayInput } from "../../design-system/ClayInput";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/auth";
-import { formatIDR } from "../../lib/currency";
+import { AppFrame } from "@shared/AppFrame";
+import { ClayCard } from "@shared/design-system/ClayCard";
+import { ClayButton } from "@shared/design-system/ClayButton";
+import { ClayInput } from "@shared/design-system/ClayInput";
+import { api } from "@shared/lib/api";
+import { errorMessage } from "@shared/lib/auth";
+import { formatIDR } from "@shared/lib/currency";
 
 type Category = { id: number; name: string; kind: "income" | "expense"; icon: string };
 type Transaction = {
@@ -18,7 +18,7 @@ type Transaction = {
 };
 type Summary = { income_idr: number; expense_idr: number; balance_idr: number };
 
-export function FinanceApp() {
+export function FinanceScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -79,7 +79,7 @@ export function FinanceApp() {
   }
 
   return (
-    <AppShell appId="finance" title="Finance Tracker">
+    <AppFrame appId="finance" title="Finance Tracker">
       {summary && (
         <ClayCard>
           <h2 style={{ marginTop: 0 }}>Balance: {formatIDR(summary.balance_idr)}</h2>
@@ -141,6 +141,6 @@ export function FinanceApp() {
           {transactions.length === 0 && <p style={{ color: "var(--clay-text-muted)" }}>No transactions yet.</p>}
         </div>
       </ClayCard>
-    </AppShell>
+    </AppFrame>
   );
 }

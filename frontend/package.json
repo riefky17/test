@@ -2,22 +2,10 @@
   "name": "family-app-suite-frontend",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.2"
+    "build": "npm run build --workspace=@family-app-suite/finance-app && npm run build --workspace=@family-app-suite/geochat-app && npm run build --workspace=@family-app-suite/fitness-app"
   }
 }

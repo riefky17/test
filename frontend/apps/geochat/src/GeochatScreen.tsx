@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AppShell } from "../../AppShell";
-import { ClayCard } from "../../design-system/ClayCard";
-import { ClayButton } from "../../design-system/ClayButton";
-import { ClayInput } from "../../design-system/ClayInput";
-import { api, wsURL } from "../../lib/api";
-import { errorMessage } from "../../lib/auth";
+import { AppFrame } from "@shared/AppFrame";
+import { ClayCard } from "@shared/design-system/ClayCard";
+import { ClayButton } from "@shared/design-system/ClayButton";
+import { ClayInput } from "@shared/design-system/ClayInput";
+import { api, wsURL } from "@shared/lib/api";
+import { errorMessage } from "@shared/lib/auth";
 
 type WsEvent = {
   kind: "message" | "location" | "sos";
@@ -23,7 +23,7 @@ type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsuppo
 // this app needs -- 3 family members, not a fleet tracker.
 const LOCATION_SHARE_INTERVAL_MS = 20_000;
 
-export function GeochatApp() {
+export function GeochatScreen() {
   const [events, setEvents] = useState<WsEvent[]>([]);
   const [draft, setDraft] = useState("");
   const [connected, setConnected] = useState(false);
@@ -152,7 +152,7 @@ export function GeochatApp() {
   }
 
   return (
-    <AppShell appId="geochat" title="Geochat">
+    <AppFrame appId="geochat" title="Geochat">
       <ClayCard flat>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: connected ? "var(--clay-accent)" : "var(--clay-text-muted)" }}>
@@ -231,6 +231,6 @@ export function GeochatApp() {
         </div>
         {error && <div style={{ color: "var(--clay-danger)", marginTop: "0.5rem" }}>{error}</div>}
       </ClayCard>
-    </AppShell>
+    </AppFrame>
   );
 }
