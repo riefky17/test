@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,9 +65,11 @@ func (s *financeService) listTransactions(c *fiber.Ctx) error {
 	out := []transaction{}
 	for rows.Next() {
 		var t transaction
-		if err := rows.Scan(&t.ID, &t.UserID, &t.CategoryID, &t.CategoryName, &t.AmountIDR, &t.Note, &t.OccurredAt); err != nil {
+		var occurredAt time.Time
+		if err := rows.Scan(&t.ID, &t.UserID, &t.CategoryID, &t.CategoryName, &t.AmountIDR, &t.Note, &occurredAt); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
+		t.OccurredAt = occurredAt.Format(time.RFC3339)
 		out = append(out, t)
 	}
 	return c.JSON(out)

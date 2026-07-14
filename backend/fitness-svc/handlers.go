@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -82,9 +83,11 @@ func (s *fitnessService) listPlans(c *fiber.Ctx) error {
 	out := []plan{}
 	for rows.Next() {
 		var p plan
-		if err := rows.Scan(&p.ID, &p.Name, &p.Style, &p.CreatedAt); err != nil {
+		var createdAt time.Time
+		if err := rows.Scan(&p.ID, &p.Name, &p.Style, &createdAt); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
+		p.CreatedAt = createdAt.Format(time.RFC3339)
 		out = append(out, p)
 	}
 	return c.JSON(out)
@@ -99,12 +102,14 @@ func (s *fitnessService) getPlan(c *fiber.Ctx) error {
 	}
 
 	var p plan
+	var createdAt time.Time
 	err = s.pool.QueryRow(c.Context(), `
 		SELECT id, name, style, created_at FROM fitness.plans WHERE id = $1 AND user_id = $2
-	`, id, user.ID).Scan(&p.ID, &p.Name, &p.Style, &p.CreatedAt)
+	`, id, user.ID).Scan(&p.ID, &p.Name, &p.Style, &createdAt)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "plan not found")
 	}
+	p.CreatedAt = createdAt.Format(time.RFC3339)
 
 	rows, err := s.pool.Query(c.Context(), `
 		SELECT pe.id, pe.exercise_id, ex.name, pe.day_label, pe.sets, pe.reps, pe.target_rpe, pe.sort_order
@@ -228,9 +233,11 @@ func (s *fitnessService) listSessions(c *fiber.Ctx) error {
 	out := []session{}
 	for rows.Next() {
 		var sess session
-		if err := rows.Scan(&sess.ID, &sess.PlanID, &sess.Notes, &sess.PerformedAt); err != nil {
+		var performedAt time.Time
+		if err := rows.Scan(&sess.ID, &sess.PlanID, &sess.Notes, &performedAt); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
+		sess.PerformedAt = performedAt.Format(time.RFC3339)
 		out = append(out, sess)
 	}
 	return c.JSON(out)

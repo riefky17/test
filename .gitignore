@@ -1,5 +1,6 @@
 dist/
 frontend/node_modules/
+frontend/apps/*/node_modules/
 frontend/apps/*/dist/
 frontend/apps/*/tsconfig.tsbuildinfo
 *.log
